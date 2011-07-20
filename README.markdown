@@ -5,6 +5,21 @@ A MySQL session store for the [connectjs][] [session middleware][] for [node.js]
 
 Currently, this code appears to function correctly but it has not been optimized for performance.  The store is implemented using [sequelize][] ORM, simply dumping the JSON-serialized session into a MySQL TEXT column.  Also, no indexes are currently created for the session ID or expiration dates.
 
+Installation
+------------
+
+Using [npm][]:
+
+    npm install -g connect-mysql-session
+
+By cloning the repo:
+
+    git clone git://github.com/CarnegieLearning/connect-mysql-session.git
+    cd connect-mysql-session
+    npm link
+
+(Note: in both cases you may need to use `sudo` when performing the `npm` step.)
+
 Usage
 -----
 
@@ -51,3 +66,4 @@ Changes
 [node.js]: http://nodejs.org/
 [sequelize]: http://www.sequelizejs.com/
 [expressjs]: http://expressjs.com/
+[npm]: http://npmjs.org/
