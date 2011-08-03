@@ -56,6 +56,11 @@ Default: `1000*60*60*24` (1 day). How long session data is stored for "user sess
 Changes
 -------
 
+### 0.1.1 and 0.1.2 (2011-08-03) ###
+
+* Lazy initialization to ensure model is ready before accessing.
+* Index the sid column.
+
 ### 0.1.0 (2011-07-19) ###
 
 * Initial version.
