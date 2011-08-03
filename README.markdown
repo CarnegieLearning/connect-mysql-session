@@ -3,7 +3,7 @@ connect-mysql-session
 
 A MySQL session store for the [connectjs][] [session middleware][] for [node.js][].
 
-Currently, this code appears to function correctly but it has not been optimized for performance.  The store is implemented using [sequelize][] ORM, simply dumping the JSON-serialized session into a MySQL TEXT column.  Also, no indexes are currently created for the session ID or expiration dates.
+Currently, this code appears to function correctly but it has not been optimized for performance.  The store is implemented using [sequelize][] ORM, simply dumping the JSON-serialized session into a MySQL TEXT column.
 
 Installation
 ------------
