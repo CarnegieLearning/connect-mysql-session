@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/CarnegieLearning/connect-mysql-session.png)](http://travis-ci.org/CarnegieLearning/connect-mysql-session)
 connect-mysql-session
 =====================
 
