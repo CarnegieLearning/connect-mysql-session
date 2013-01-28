@@ -5,16 +5,16 @@
   "version": "0.1.3",
   "repository": {
     "type": "git",
-    "url": "git://github.com/CarnegieLearning/connect-mysql-session.git"
+    "url": "git://github.com/alum/connect-mysql-session.git"
   },
   "main": "./index.js",
   "engines": {
-    "node": "~0.4"
+    "node": ">=0.4"
   },
   "dependencies": {
-    "sequelize": "~1.1"
+    "sequelize": ">=1.3"
   },
   "devDependencies": {
-    "connect": "~1.6"
+    "connect": ">=1.6"
   }
 }
