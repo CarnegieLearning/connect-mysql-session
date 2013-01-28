@@ -2,7 +2,7 @@
   "author": "Daniel Dickison <ddickison@carnegielearning.com>",
   "name": "connect-mysql-session",
   "description": "A MySQL session store for node.js connect.",
-  "version": "0.1.3.1",
+  "version": "0.1.4",
   "repository": {
     "type": "git",
     "url": "git://github.com/alum/connect-mysql-session.git"
