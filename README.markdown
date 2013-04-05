@@ -53,6 +53,10 @@ Default: `1000*60*10` (10 minutes). How frequently the session store checks for 
 
 Default: `1000*60*60*24` (1 day). How long session data is stored for "user session" cookies -- i.e. sessions that only last as long as the user keeps their browser open, which are created by doing `req.session.maxAge = null`.
 
+### logging ###
+
+Default: `false`. If set to true, we are logging whats going on to stdout.
+
 Changes
 -------
 
