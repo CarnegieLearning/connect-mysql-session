@@ -2,19 +2,19 @@
   "author": "Daniel Dickison <ddickison@carnegielearning.com>",
   "name": "connect-mysql-session",
   "description": "A MySQL session store for node.js connect.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "repository": {
     "type": "git",
     "url": "git://github.com/CarnegieLearning/connect-mysql-session.git"
   },
   "main": "./index.js",
   "engines": {
-    "node": "~0.4"
+    "node": ">=0.4"
   },
   "dependencies": {
-    "sequelize": "~1.1"
+    "sequelize": ">=1.3"
   },
   "devDependencies": {
-    "connect": "~1.6"
+    "connect": ">=1.6"
   }
 }
