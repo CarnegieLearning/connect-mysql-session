@@ -13,8 +13,6 @@ module.exports = (connect) ->
   ###
   MySQLStore = (_connection, _options) ->
     
-
-
     ###
       Default values
     ###
@@ -27,8 +25,6 @@ module.exports = (connect) ->
     _options.checkExpirationInterval ?= 24*60 #check once a day
     _options.defaultExpiration ?= 7*24*60 #expire after one week
     options = _options
-
-
 
     ###
       Connect & Initialize MySQL Engine
@@ -60,13 +56,10 @@ module.exports = (connect) ->
             console.log "MySQL session store initialized."
             initialized = true
             callback()
-
     connect.session.Store.call this, options
     self = this
     initialized = false
     
-
-
     ###
       Check periodically to clear out expired sessions.
     ###
@@ -74,7 +67,7 @@ module.exports = (connect) ->
       initialize (error) ->
         return if error
         sql = """
-          DELETE FROM `sessions`.`SESSION` WHERE expires < ? 
+          DELETE FROM `sessions`.`session` WHERE expires < ? 
         """
         connection.query sql, [Math.round(Date.now() / 1000)], (err, rows, fields) ->
           if err?
@@ -83,54 +76,46 @@ module.exports = (connect) ->
           console.log "Destroying " + rows.length + " expired sessions."    
     ), checkExpirationInterval
 
-
-
     ###
       Retrieve the session data
     ###
     @get = (sid, fn) ->
       initialize (error) ->
-        return fn(error, null) if error?
+        return fn(error) if error?
         connection.query "SELECT * FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
           if err?
             fn err, undefined 
             return
           fn undefined, JSON.parse(rows[0].json)
 
-
     ###
       Write to the user session
     ###
     @set = (sid, session, fn) ->
       initialize (error) ->
-        return fn and fn(error)  if error
-        
-        # Set expiration to match the cookie or 1 year in the future if unspecified.
-        
-        # Note: JS uses milliseconds, but we want integer seconds.
-        Session.find(where:
-          sid: sid
-        ).on("success", (record) ->
-          record = Session.build(sid: sid)  unless record
-          record.json = JSON.stringify(session)
-          expires = session.cookie.expires or new Date(Date.now() + defaultExpiration)
-          record.expires = Math.round(expires.getTime() / 1000)
-          record.save().on("success", ->
-            fn and fn()
-          ).on "failure", (error) ->
-            fn and fn(error)
-
-        ).on "failure", (error) ->
-          fn and fn(error)
-
-
-
+        return fn(error, null) if error?
+        connection.query "DELETE FROM `sessions`.`session` WHERE `sid`=?", [sid], (err) ->
+          return fn err if err?
+          # Set expiration to match the cookie or 1 year in the future if unspecified.
+          # Note: JS uses milliseconds, but we want integer seconds.
+          record =
+            sid: sid
+            json: JSON.stringify(session)
+            expires: session.cookie.expires or new Date(Date.now() + defaultExpiration)
+          record.expires = Math.round(expires.getTime() / 1000)      
+          sql = """
+            INSERT INTO `sessions`.`session` (`sid`, `expires`, `json`)  VALUES (?, ?, ?)
+          """    
+          connection.query sql, [sid, expires, json], (err) ->
+            return fn err if err?
+            fn()
+                  
     ###
       Delete the user session
     ###
     @destroy = (sid, fn) ->
       initialize (error) ->
-        return fn(error, null) if error?
+        return fn(error) if error?
         connection.query "DELETE FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
           if err?
             console.log "Session " + sid + " could not be destroyed."
@@ -138,19 +123,23 @@ module.exports = (connect) ->
             return
           fn()
 
-
-
+    ###
+      Number of users with active sessions
+    ###
     @length = (callback) ->
       initialize (error) ->
-        return callback(null)  if error
-        Session.count().on("success", callback).on "failure", ->
-          callback null
+        return callback error if error?
+        connection.query "SELECT * FROM `sessions`.`session`", (err, rows) ->
+          return callback err if err?
+          callback undefined, rows.length
 
-
-
+    ###
+      Remove all user sessions (reset/log everyone out)
+    ###
     @clear = (callback) ->
-      sequelize.sync
-        force: true
-      , callback
+      initialize (error) ->
+        return callback error if error?
+        connection.query "DELETE FROM `sessions`.`session`", callback
+
   MySQLStore::__proto__ = connect.session.Store::
   MySQLStore
