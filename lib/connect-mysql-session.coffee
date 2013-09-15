@@ -1,65 +1,106 @@
-Sequelize = require("sequelize")
+mysql = require "mysql"
+
 module.exports = (connect) ->
-  MySQLStore = (database, user, password, options) ->
-    # default 10 minutes.
-    # default 1 day.
+  
+  ###
+    connection = 
+      host: name of the database's host
+      user: login username
+      password: login password
+    options =
+      checkExpirationInterval: (in minutes)
+      defaultExpiration: (in minutes)
+  ###
+  MySQLStore = (_connection, _options) ->
+    
+
+
+    ###
+      Default values
+    ###
+    _connection ?= {}
+    _connection.host ?= "127.0.0.1"
+    _connection.user ?= "root"
+    _connection.password ?= ""
+    connection = mysql.createConnection _connection
+    _options ?= {}
+    _options.checkExpirationInterval ?= 24*60 #check once a day
+    _options.defaultExpiration ?= 7*24*60 #expire after one week
+    options = _options
+
+
+
+    ###
+      Connect & Initialize MySQL Engine
+    ###
     initialize = (callback) ->
       unless initialized
-        sequelize.sync(force: forceSync).on("success", ->
-          console.log "MySQL session store initialized."
-          initialized = true
-          callback()
-        ).on "failure", (error) ->
-          console.log "Failed to initialize MySQL session store:"
-          console.log error
-          callback error
+        connection.connect()
+        sql = """
+          CREATE DATABASE IF NOT EXISTS `sessions`
+        """
+        connection.query sql, (err, rows, fields) ->
+          if err?
+            console.log "Failed to initialize MySQL session store. Couldn't create sessions database.", err
+            callback err; return      
+          sql = """
+            CREATE TABLE IF NOT EXISTS `sessions`.`session` (
+              `sid` varchar(40) NOT NULL DEFAULT '',
+              `expires` int(11) DEFAULT NULL,
+              `json` varchar(4096) DEFAULT '',
+              PRIMARY KEY (`sid`)
+            ) 
+            ENGINE=MEMORY 
+            DEFAULT CHARSET=utf8
+          """
+          connection.query sql, (err, rows, fields) ->
+            if err?
+              console.log "Failed to initialize MySQL session store. Couldn't create session table.", err
+              callback err; return      
+            console.log "MySQL session store initialized."
+            initialized = true
+            callback()
 
-    options = options or {}
     connect.session.Store.call this, options
     self = this
-    forceSync = options.forceSync or false
-    checkExpirationInterval = options.checkExpirationInterval or 1000 * 60 * 10
-    defaultExpiration = options.defaultExpiration or 1000 * 60 * 60 * 24
-    sequelize = new Sequelize(database, user, password, options)
-    Session = sequelize.define("Session",
-      sid:
-        type: Sequelize.STRING
-        unique: true
-        allowNull: false
-
-      expires: Sequelize.INTEGER
-      json: Sequelize.TEXT
-    )
     initialized = false
     
-    # Check periodically to clear out expired sessions.
+
+
+    ###
+      Check periodically to clear out expired sessions.
+    ###
     setInterval (->
       initialize (error) ->
-        return  if error
-        Session.findAll(where: ["expires < ?", Math.round(Date.now() / 1000)]).on("success", (sessions) ->
-          if sessions.length > 0
-            console.log "Destroying " + sessions.length + " expired sessions."
-            for i of sessions
-              sessions[i].destroy()
-        ).on "failure", (error) ->
-          console.log "Failed to fetch expired sessions:"
-          console.log error
-
-
+        return if error
+        sql = """
+          DELETE FROM `sessions`.`SESSION` WHERE expires < ? 
+        """
+        connection.query sql, [Math.round(Date.now() / 1000)], (err, rows, fields) ->
+          if err?
+            console.log "Failed to fetch expired sessions:", err
+            return
+          console.log "Destroying " + rows.length + " expired sessions."    
     ), checkExpirationInterval
+
+
+
+    ###
+      Retrieve the session data
+    ###
     @get = (sid, fn) ->
       initialize (error) ->
-        return fn(error, null)  if error
-        Session.find(where:
-          sid: sid
-        ).on("success", (record) ->
-          session = record and JSON.parse(record.json)
-          fn null, session
-        ).on "failure", (error) ->
-          fn error, null
+        return fn(error, null) if error?
+        connection.query "SELECT * FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
+          if err?
+            fn err, undefined 
+            return
+          fn undefined, JSON.parse(rows[0].json)
 
 
-
+    ###
+      Write to the user session
+    ###
     @set = (sid, session, fn) ->
       initialize (error) ->
         return fn and fn(error)  if error
@@ -84,24 +125,18 @@ module.exports = (connect) ->
 
 
 
+    ###
+      Delete the user session
+    ###
     @destroy = (sid, fn) ->
       initialize (error) ->
-        return fn and fn(error)  if error
-        Session.find(where:
-          sid: sid
-        ).on("success", (record) ->
-          if record
-            record.destroy().on("success", ->
-              fn and fn()
-            ).on "failure", (error) ->
-              console.log "Session " + sid + " could not be destroyed:"
-              console.log error
-              fn and fn(error)
-
-          else
-            fn and fn()
-        ).on "failure", (error) ->
-          fn and fn(error)
+        return fn(error, null) if error?
+        connection.query "DELETE FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
+          if err?
+            console.log "Session " + sid + " could not be destroyed."
+            fn err, undefined 
+            return
+          fn()
 
 
 
