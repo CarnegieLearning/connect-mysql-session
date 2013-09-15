@@ -74,7 +74,7 @@ module.exports = (connect) ->
             console.log "Failed to fetch expired sessions:", err
             return
           console.log "Destroying " + rows.length + " expired sessions."    
-    ), checkExpirationInterval
+    ), options.checkExpirationInterval
 
     ###
       Retrieve the session data
@@ -101,7 +101,7 @@ module.exports = (connect) ->
           record =
             sid: sid
             json: JSON.stringify(session)
-            expires: session.cookie.expires or new Date(Date.now() + defaultExpiration)
+            expires: session.cookie.expires or new Date(Date.now() + options.defaultExpiration)
           record.expires = Math.round(expires.getTime() / 1000)      
           sql = """
             INSERT INTO `sessions`.`session` (`sid`, `expires`, `json`)  VALUES (?, ?, ?)
