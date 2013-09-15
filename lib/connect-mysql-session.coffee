@@ -139,7 +139,8 @@ module.exports = (connect) ->
     @clear = (callback) ->
       initialize (error) ->
         return callback error if error?
-        connection.query "DELETE FROM `sessions`.`session`", callback
+        connection.query "DELETE FROM `sessions`.`session`", (err) ->
+          callback err
 
   MySQLStore::__proto__ = connect.session.Store::
   MySQLStore
