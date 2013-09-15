@@ -93,7 +93,7 @@ module.exports = (connect) ->
           @client.query sql, [sid, ttl, json], (err) =>
             console.log "SET!", err, sid, ttl, json
             return fn err if err?
-            fn()
+            fn.apply(this, arguments)
 
 
     destroy: (sid, fn) =>
