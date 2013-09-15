@@ -142,5 +142,5 @@ module.exports = (connect) ->
         connection.query "DELETE FROM `sessions`.`session`", (err) ->
           callback err
 
-  MySQLStore::__proto__ = connect.session.Store::
-  MySQLStore
+  #MySQLStore::__proto__ = connect.session.Store::
+  return MySQLStore
