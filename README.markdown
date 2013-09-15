@@ -3,22 +3,16 @@ connect-mysql-session
 
 A MySQL session store for the [connectjs][] [session middleware][] for [node.js][].
 
-Currently, this code appears to function correctly but it has not been optimized for performance.  The store is implemented using [sequelize][] ORM, simply dumping the JSON-serialized session into a MySQL TEXT column.
+An highly optimized dependency-reduced version of original work by "CarnegieLearning".
+
+Optimizations/Deltas
+--------------------
+* Now written (and maintained) in Coffeescript
+* Removed unnecessary dependence on Sequelize
+* Switched to mySql's in-memory database engine
 
 Installation
 ------------
-
-Using [npm][]:
-
-    npm install -g connect-mysql-session
-
-By cloning the repo:
-
-    git clone git://github.com/CarnegieLearning/connect-mysql-session.git
-    cd connect-mysql-session
-    npm link
-
-(Note: in both cases you may need to use `sudo` when performing the `npm` step.)
 
 Usage
 -----
@@ -55,6 +49,12 @@ Default: `1000*60*60*24` (1 day). How long session data is stored for "user sess
 
 Changes
 -------
+
+### 0.2.0 (2013-09-14)
+
+* Switch to Coffeescript
+* Removed Sequelize
+* Built on memory engine (MUCH more performant)
 
 ### 0.1.1 and 0.1.2 (2011-08-03) ###
 
