@@ -30,7 +30,6 @@ module.exports = (connect) ->
     Store.call this, options
     # -- Create client
     @client = options.client or mysql.createConnection options    
-    @initialize() #ignore callback for now. Just an optimization to initialize faster
     @client.on "error", =>
       @emit "disconnect"
     @client.on "connect", =>
