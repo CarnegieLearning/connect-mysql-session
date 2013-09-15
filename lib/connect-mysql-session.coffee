@@ -2,8 +2,6 @@ mysql = require "mysql"
 
 module.exports = (connect) ->
   
-  Store = connect.session.Store
-
   ###
     options =
       host: name of the database's host
@@ -15,36 +13,29 @@ module.exports = (connect) ->
       ttl: no idea yet...
   ###
 
-  MySqlStore = (options) =>
-    # -- Context
-    @initialized = false
-    # -- Default values    
-    options = options or {}
-    options.host ?= "127.0.0.1"
-    options.user ?= "root"
-    options.password ?= ""
-    options.checkExpirationInterval ?= 24*60*60 #check once a day
-    options.defaultExpiration ?= 7*24*60*60 #expire after one week
-    @options = options
-    # -- Link middleware
-    Store.call this, options
-    # -- Create client
-    @client = options.client or mysql.createConnection options    
-    @client.on "error", =>
-      @emit "disconnect"
-    @client.on "connect", =>
-      @emit "connect"
+  class MySqlStore extends connect.session.Store
+    constructor: (@options) ->
+      # -- Context
+      @initialized = false
+      # -- Default values    
+      options = options or {}
+      options.host ?= "127.0.0.1"
+      options.user ?= "root"
+      options.password ?= ""
+      options.checkExpirationInterval ?= 24*60*60 #check once a day
+      options.defaultExpiration ?= 7*24*60*60 #expire after one week
+      # -- Link middleware
+      connect.session.Store.call this, options
+      # -- Create client
+      @client = options.client or mysql.createConnection options    
+      @client.on "error", =>
+        @emit "disconnect"
+      @client.on "connect", =>
+        @emit "connect"
 
-  
-  ###
-  Inherit from `Store`.
-  ###
-  MySqlStore::__proto__ = Store::
-  
-
-  MySqlStore::initialize = (fn) =>
-    console.log "DATABASE!"
-    unless @initialized
+    initialize: (fn) =>
+      fn() if @initialized #run only once
+      console.log "DATABASE!"
       @client.connect()
       sql = """
         CREATE DATABASE IF NOT EXISTS `sessions`
@@ -72,23 +63,22 @@ module.exports = (connect) ->
           fn()
 
   
-  MySqlStore::get = (sid, fn) =>
-    console.log "GET", sid
-    @initialize (error) =>
-      return fn error if error?
-      @client.query "SELECT * FROM `sessions`.`session` WHERE `sid`=?", [sid], (err, rows, fields) =>
-        return fn err if err?
-        console.log "GOT", rows[0]
-        result = undefined
-        try
-          result = JSON.parse rows[0].json
-        catch err
-          return fn err
-        fn undefined, result
+    get: (sid, fn) =>
+      console.log "GET", sid
+      @initialize (error) =>
+        return fn error if error?
+        @client.query "SELECT * FROM `sessions`.`session` WHERE `sid`=?", [sid], (err, rows, fields) =>
+          return fn err if err?
+          console.log "GOT", rows[0]
+          result = undefined
+          try            
+            result = JSON.parse rows[0].json if rows?[0]?
+          catch err
+            return fn err
+          fn undefined, result
 
 
-  MySqlStore::set = (sid, session, fn) =>      
-    try
+    set: (sid, session, fn) =>      
       maxAge = session.cookie.maxAge
       ttl = @options.ttl
       json = JSON.stringify(session)
@@ -99,20 +89,20 @@ module.exports = (connect) ->
         @client.query "DELETE FROM `sessions`.`session` WHERE `sid`=?", [sid], (err) =>
           return fn err if err?
           sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`)  VALUES (?, ?, ?)"
+          console.log "\n\n\n=-=-=[CONNECT.SET]", sql, "\n\n\n" #xxx
           @client.query sql, [sid, ttl, json], (err) =>
+            console.log "SET!", err, sid, ttl, json
             return fn err if err?
             fn()
-    catch err
-      fn and fn(err)
 
 
-  MySqlStore::destroy = (sid, fn) =>
-    @initialize (error) =>
-      return fn error if error?
-      @client.query "DELETE FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
-        if err?
-          console.log "Session " + sid + " could not be destroyed."
-          return fn err, undefined 
-        fn()
+    destroy: (sid, fn) =>
+      @initialize (error) =>
+        return fn error if error?
+        @client.query "DELETE FROM `sessions`.`session` WHERE `sid`=?",[sid], (err, rows, fields) ->
+          if err?
+            console.log "Session " + sid + " could not be destroyed."
+            return fn err, undefined 
+          fn()
 
   return MySqlStore
