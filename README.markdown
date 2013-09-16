@@ -41,6 +41,13 @@ As [this study](http://www.aspieschool.com/wiki/index.php?title=Redis_vs_MySQL_(
 
 MySQL's Memory Engine can performed sustained writes at 92% the speed of Redis, yet performs reads at almost 25X (times!!!) faster. Given that session stores show a heavy read bias, the end result is a large performance gain.
 
+Limitations
+-----------
+
+In general, if you follow best-practices for session storage you won't have problems, but MySQL's memory engine gains performance through limiting what and how you can store data.
+
+* Session data must be JSON serializable (no binary objects)
+* Maximum serialized session size is 4096 bytes (chosen for practicality/performance; hard coded, not MySQL restriction)
 
 Installation
 ------------
