@@ -37,7 +37,7 @@ Why MySQL for Sessions?
 
 MySQL in-memory table stores are about as efficient as data storage can get, primary due to its lack of features. Data is allocated in small blocks and indexed with a hash or binary tree.
 
-As [this study](http://www.aspieschool.com/wiki/index.php?title=Redis_vs_MySQL_(Benchmarks)) revealed,
+As [this study](http://bit.ly/17ZzafB) revealed,
 
 MySQL's Memory Engine can performed sustained writes at 92% the speed of Redis, yet performs reads at almost 25X (times!!!) faster. Given that session stores show a heavy read bias, the end result is a large performance gain.
 
