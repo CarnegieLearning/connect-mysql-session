@@ -35,7 +35,6 @@ module.exports = (connect) ->
 
     initialize: (fn) =>
       return fn() if @initialized #run only once
-      console.log "DATABASE!", @initialized
       @client.connect()
       sql = """
         CREATE DATABASE IF NOT EXISTS `sessions`
@@ -48,10 +47,12 @@ module.exports = (connect) ->
           CREATE TABLE IF NOT EXISTS `sessions`.`session` (
             `sid` varchar(40) NOT NULL DEFAULT '',
             `ttl` int(11) DEFAULT NULL,
-            `json` varchar(4096) DEFAULT '',
+            `json` mediumtext DEFAULT NULL,
+            `createdAt` datetime DEFAULT NULL,
+            `updatedAt` datetime DEFAULT NULL,
             PRIMARY KEY (`sid`)
           ) 
-          ENGINE=MEMORY 
+          ENGINE=INNODB 
           DEFAULT CHARSET=utf8
         """
         @client.query sql, (err, rows, fields) =>
@@ -64,12 +65,10 @@ module.exports = (connect) ->
 
   
     get: (sid, fn) =>
-      console.log "GET", sid
       @initialize (error) =>
         return fn error if error?
         @client.query "SELECT * FROM `sessions`.`session` WHERE `sid`=?", [sid], (err, rows, fields) =>
           return fn err if err?
-          console.log "GOT", rows[0]
           result = undefined
           try            
             result = JSON.parse rows[0].json if rows?[0]?
@@ -83,20 +82,16 @@ module.exports = (connect) ->
       ttl = @options.ttl
       json = JSON.stringify(session)
       ttl = ttl or ((if "number" is typeof maxAge then maxAge / 1000 | 0 else @options.defaultExpiration))
-      console.log "SET", sid, ttl, json
       @initialize (error) =>
-        console.log "\n\n\n=-=-=[SET](1)", error, "\n\n\n" #xxx
         return fn error if error?        
         # -- Update session if exists
-        @client.query "UPDATE `sessions`.`session` SET `ttl`=?, `json`=? WHERE `sid`=?", [ttl, json, sid], (err1, meta) =>
+        @client.query "UPDATE `sessions`.`session` SET `ttl`=?, `json`=?, `updatedAt`=UTC_TIMESTAMP() WHERE `sid`=?", [ttl, json, sid], (err1, meta) =>
           console.log "\n\n\n=-=-=[SET](2)", err1, meta, "\n\n\n" #xxx
           return fn err1 if err1?
           return fn.apply(this, arguments) if meta.affectedRows >= 1
           # -- Create new session (because doesn't exist)
-          console.log "\n\n\n=-=-=[SET](2.1)", err1, "\n\n\n" #xxx
-          sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`) VALUES (?, ?, ?)"
+          sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`, `createdAt`, `updatedAt`) VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
           @client.query sql, [sid, ttl, json], (err2) =>
-            console.log "\n\n\n=-=-=[CONNECT.SET]", sql, err2, sid, ttl, json, "\n\n\n" #xxx
             return fn err2 if err2?
             fn.apply(this, arguments)
 

@@ -46,8 +46,10 @@ Limitations
 
 In general, if you follow best-practices for session storage you won't have problems, but MySQL's memory engine gains performance through limiting what and how you can store data.
 
+* MySQL version >= 5.0.3 with Memory Engine is required
+* Node.js version >= 0.8
 * Session data must be JSON serializable (no binary objects)
-* Maximum serialized session size is 4096 bytes (chosen for practicality/performance; hard coded, not MySQL restriction)
+* Maximum serialized session size is 64k bytes (MySQL Memory Engine restriction resulting from row-size limit)
 
 Installation
 ------------
