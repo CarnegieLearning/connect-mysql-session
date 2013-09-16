@@ -93,15 +93,15 @@ module.exports = (connect) ->
       ttl = ttl or ((if "number" is typeof maxAge then maxAge / 1000 | 0 else @options.defaultExpiration))
       @initialize (error) =>
         return fn error if error?        
-        # -- Update session if exists
-        @client.query "UPDATE `sessions`.`session` SET `ttl`=?, `json`=?, `updatedAt`=UTC_TIMESTAMP() WHERE `sid`=?", [ttl, json, sid], (err1, meta) =>
-          return fn err1 if err1?
-          return fn.apply(this, arguments) if meta.affectedRows >= 1
-          # -- Create new session (because doesn't exist)
-          sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`, `createdAt`, `updatedAt`) VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
-          @client.query sql, [sid, ttl, json], (err2) =>
-            return fn err2 if err2?
-            fn.apply(this, arguments)
+        # -- Update session if exists; Create otherwise        
+        sql = """
+          INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`, `createdAt`, `updatedAt`) 
+          VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+          ON DUPLICATE KEY UPDATE
+        """
+        @client.query sql, [sid, ttl, json], (err) =>
+          return fn err if err?
+          fn.apply(this, arguments)
 
 
     destroy: (sid, fn) =>
