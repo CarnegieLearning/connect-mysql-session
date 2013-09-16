@@ -97,9 +97,10 @@ module.exports = (connect) ->
         sql = """
           INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`, `createdAt`, `updatedAt`) 
           VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-          ON DUPLICATE KEY UPDATE
+          ON DUPLICATE KEY 
+          UPDATE `ttl`=?, `json`=?, `updatedAt`=UTC_TIMESTAMP()
         """
-        @client.query sql, [sid, ttl, json], (err) =>
+        @client.query sql, [sid, ttl, json, ttl, json], (err) =>
           return fn err if err?
           fn.apply(this, arguments)
 
