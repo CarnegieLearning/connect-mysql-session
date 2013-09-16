@@ -84,8 +84,12 @@ The following example uses [expressjs][], but this should work fine using [conne
     var app = express.createServer();
     app.use(express.cookieParser());
     app.use(express.session({
-        store: new MySQLSessionStore("dbname", "user", "password", {
-            // options...
+        store: new MySQLSessionStore({
+            host: 127.0.0.1, //database host name
+            user: "root", //database username
+            password: "", //database user's password
+            checkExpirationInterval: 12*60*60, //how frequently to check for dead sessions (seconds)
+            defaultExpiration: 7*24*60*60 //how long to keep session alive (seconds)
         }),
         secret: "keyboard cat"
     }));
