@@ -9,7 +9,7 @@ Optimizations/Deltas
 --------------------
 * Now written (and maintained) in Coffeescript
 * Removed unnecessary dependence on Sequelize
-* Switched to mySql's in-memory database engine
+* Forward support for mySql's in-memory database engine
 
 Why MySQL for Sessions?
 ------------------------
@@ -33,23 +33,42 @@ Why MySQL for Sessions?
 * Fewer languages means less development time and fewer management and monitoring tools to buy. You are already monitoring your primary data store, why not just reuse that investment.
 
 
-### Better performance
+### Better performance?
 
-MySQL in-memory table stores are about as efficient as data storage can get, primary due to its lack of features. Data is allocated in small blocks and indexed with a hash or binary tree.
+Sessions are the simplest case of table storage using no relations and single primary key btree or hash indexes. This largely mitigates the disadvantages of relational database overhead (conversely mitigating most of the advantages of dictionary stores that are essentially the same thing as flat tables with single indexes).
+
+By default this library uses the InnoDB persistent storage engine in MySQL to allow for up to 16MB of data to be stored in each user session and to do so with dynamic memory allocation. InnoDB is only about 2%-8% slower than a similarly provisioned Redis instance.
+
+If greater performance is desired, you can switch to the MySQL Memory engine with a one word change to the code (will eventually be a direct config option in this library). MySQL in-memory table stores are about as efficient as data storage can get, primary due to its lack of features. The entire table is statically allocated with data allocated in small blocks within it and indexed with a hash or binary tree.
 
 As [this study](http://bit.ly/17ZzafB) revealed,
 
-MySQL's Memory Engine can performed sustained writes at 92% the speed of Redis, yet performs reads at almost 25X (times!!!) faster. Given that session stores show a heavy read bias, the end result is a large performance gain.
+MySQL's Memory Engine performed sustained writes at 92% the speed of Redis, yet performed reads at almost 25X (times!!!) the speed. Given that session stores show a heavy read bias, the end result is a large performance gain.
 
 Limitations
 -----------
 
-In general, if you follow best-practices for session storage you won't have problems, but MySQL's memory engine gains performance through limiting what and how you can store data.
+### General
+
+These limitations apply regardless of the database engine chosen:
 
 * MySQL version >= 5.0.3 with Memory Engine is required
 * Node.js version >= 0.8
 * Session data must be JSON serializable (no binary objects)
-* Maximum serialized session size is 64k bytes (MySQL Memory Engine restriction resulting from row-size limit)
+
+### Memory Engine
+
+In general, if you follow best-practices for session storage you won't have problems, but MySQL's memory engine gains performance through limiting what and how you can store data.
+
+* Maximum serialized session size is 20k bytes (MySQL Memory Engine restriction resulting from row-size limit)
+* Memory allocated to the engine is not available to cache primary tables and can hurt performance if too large.
+
+### InnoDB Engine
+
+If you use the InnoDB engine (default):
+
+* Maximum serialized session size is 16MB bytes
+  
 
 Installation
 ------------
@@ -75,26 +94,27 @@ The following example uses [expressjs][], but this should work fine using [conne
 Options
 -------
 
-### forceSync ###
+### host, user, password ###
 
-Default: `false`. If set to true, the Sessions table will be dropped before being reinitialized, effectively clearing all session data.
+Database credentials. Defaults to localhost defaults.
 
 ### checkExpirationInterval ###
 
-Default: `1000*60*10` (10 minutes). How frequently the session store checks for and clears expired sessions.
+Default: `12*60*60` (Twice a day). Specified in seconds. How frequently the session store checks for and clears expired sessions.
 
 ### defaultExpiration ###
 
-Default: `1000*60*60*24` (1 day). How long session data is stored for "user session" cookies -- i.e. sessions that only last as long as the user keeps their browser open, which are created by doing `req.session.maxAge = null`.
+Default: `7*24*60*60` (1 week). Specified in seconds. How long session data is stored for "user session" cookies -- i.e. sessions that only last as long as the user keeps their browser open, which are created by doing `req.session.maxAge = null`.
 
 Changes
 -------
 
-### 0.2.0 (2013-09-14)
+### 0.2.6 (2013-09-14)
 
 * Switch to Coffeescript
 * Removed Sequelize
-* Built on memory engine (MUCH more performant)
+* Built on InnoDB engine (MUCH more space performant)
+* Built on memory engine (MUCH more time performant)
 
 ### 0.1.1 and 0.1.2 (2011-08-03) ###
 
