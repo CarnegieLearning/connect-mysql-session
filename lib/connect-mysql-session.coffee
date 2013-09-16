@@ -18,24 +18,24 @@ module.exports = (connect) ->
       # -- Context
       @initialized = false
       # -- Default values    
-      options = options or {}
-      options.host ?= "127.0.0.1"
-      options.user ?= "root"
-      options.password ?= ""
-      options.checkExpirationInterval ?= 24*60*60 #check once a day
-      options.defaultExpiration ?= 7*24*60*60 #expire after one week
+      @options = @options or {}
+      @options.host ?= "127.0.0.1"
+      @options.user ?= "root"
+      @options.password ?= ""
+      @options.checkExpirationInterval ?= 24*60*60 #check once a day
+      @options.defaultExpiration ?= 7*24*60*60 #expire after one week
       # -- Link middleware
-      connect.session.Store.call this, options
+      connect.session.Store.call this, @options
       # -- Create client
-      @client = options.client or mysql.createConnection options    
+      @client = options.client or mysql.createConnection @options    
       @client.on "error", =>
         @emit "disconnect"
       @client.on "connect", =>
         @emit "connect"
 
     initialize: (fn) =>
-      fn() if @initialized #run only once
-      console.log "DATABASE!"
+      return fn() if @initialized #run only once
+      console.log "DATABASE!", @initialized
       @client.connect()
       sql = """
         CREATE DATABASE IF NOT EXISTS `sessions`
@@ -85,14 +85,19 @@ module.exports = (connect) ->
       ttl = ttl or ((if "number" is typeof maxAge then maxAge / 1000 | 0 else @options.defaultExpiration))
       console.log "SET", sid, ttl, json
       @initialize (error) =>
+        console.log "\n\n\n=-=-=[SET](1)", error, "\n\n\n" #xxx
         return fn error if error?        
-        @client.query "DELETE FROM `sessions`.`session` WHERE `sid`=?", [sid], (err) =>
-          return fn err if err?
-          sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`)  VALUES (?, ?, ?)"
-          console.log "\n\n\n=-=-=[CONNECT.SET]", sql, "\n\n\n" #xxx
-          @client.query sql, [sid, ttl, json], (err) =>
-            console.log "SET!", err, sid, ttl, json
-            return fn err if err?
+        # -- Update session if exists
+        @client.query "UPDATE `sessions`.`session` SET `ttl`=?, `json`=? WHERE `sid`=?", [ttl, json, sid], (err1, meta) =>
+          console.log "\n\n\n=-=-=[SET](2)", err1, meta, "\n\n\n" #xxx
+          return fn err1 if err1?
+          return fn.apply(this, arguments) if meta.affectedRows >= 1
+          # -- Create new session (because doesn't exist)
+          console.log "\n\n\n=-=-=[SET](2.1)", err1, "\n\n\n" #xxx
+          sql = "INSERT INTO `sessions`.`session` (`sid`, `ttl`, `json`) VALUES (?, ?, ?)"
+          @client.query sql, [sid, ttl, json], (err2) =>
+            console.log "\n\n\n=-=-=[CONNECT.SET]", sql, err2, sid, ttl, json, "\n\n\n" #xxx
+            return fn err2 if err2?
             fn.apply(this, arguments)
 
 

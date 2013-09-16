@@ -11,6 +11,37 @@ Optimizations/Deltas
 * Removed unnecessary dependence on Sequelize
 * Switched to mySql's in-memory database engine
 
+Why MySQL for Sessions?
+------------------------
+
+## Less Maintenance
+
+* If you already use MySQL for your primary data store, eliminating the use of Mongo or Redis reduces the number of vendors, number of critical failure points, and probability of failure in your system as a whole.
+
+* Reduced polyglot results from eliminating yet another domain specific language (Redis/Mongo) from your development stack.
+
+* You don't have to build/configure additional monitoring and management for your session store. Your primary data store automatically covers it.
+
+* Upgrades to your primary datastore automatically effect the session store. You don't need to perform two separate upgrades.
+
+## Lower Operating Costs
+
+* It is less expensive to scale existing technology (provision a larger database server), than to provision multiple smaller database servers
+
+* Fewer servers makes it less expensive to run staging and development copies of your infrastructure.
+
+* Fewer languages means less development time and fewer management and monitoring tools to buy. You are already monitoring your primary data store, why not just reuse that investment.
+
+
+## Better performance
+
+MySQL in-memory table stores are about as efficient as data storage can get, primary due to its lack of features. Data is allocated in small blocks and indexed with a hash or binary tree.
+
+As [this study](http://www.aspieschool.com/wiki/index.php?title=Redis_vs_MySQL_(Benchmarks)) revealed,
+
+MySQL's Memory Engine can performed sustained writes at 92% the speed of Redis, yet performs reads at almost 25X (times!!!) faster. Given that session stores show a heavy read bias, the end result is a large performance gain.
+
+
 Installation
 ------------
 
