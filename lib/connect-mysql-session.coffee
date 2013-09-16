@@ -9,8 +9,7 @@ module.exports = (connect) ->
       password: login password
       checkExpirationInterval: (in seconds)
       defaultExpiration: (in seconds)
-      client: (optional) fully instantiated client to use, instead of creating one internally
-      ttl: no idea yet...
+      client: (optional) fully instantiated client to use, instead of creating one internally      
   ###
 
   class MySqlStore extends connect.session.Store
@@ -22,7 +21,7 @@ module.exports = (connect) ->
       @options.host ?= "127.0.0.1"
       @options.user ?= "root"
       @options.password ?= ""
-      @options.checkExpirationInterval ?= 24*60*60 #check once a day
+      @options.checkExpirationInterval ?= 12*60*60 #check twice a day
       @options.defaultExpiration ?= 7*24*60*60 #expire after one week
       # -- Link middleware
       connect.session.Store.call this, @options
@@ -61,9 +60,19 @@ module.exports = (connect) ->
             return fn err
           console.log "MySQL session store initialized."
           @initialized = true
+          @_watchdog() #expire expired sessions
           fn()
 
-  
+    _watchdog: () =>      
+      sql = """
+        DELETE FROM `sessions`.`session` WHERE TIME_TO_SEC(UTC_TIMESTAMP()) - TIME_TO_SEC(`updatedAt`) > `ttl`
+      """
+      @client.query sql, [], (err, meta) =>
+        console.log "Could not cleanup expired sessions:", err if err?
+        console.log "Removed #{meta.affectedRows} expired user sessions." if meta.affectedRows > 0
+        setTimeout @_watchdog, @options.checkExpirationInterval * 1000
+
+
     get: (sid, fn) =>
       @initialize (error) =>
         return fn error if error?
@@ -86,7 +95,6 @@ module.exports = (connect) ->
         return fn error if error?        
         # -- Update session if exists
         @client.query "UPDATE `sessions`.`session` SET `ttl`=?, `json`=?, `updatedAt`=UTC_TIMESTAMP() WHERE `sid`=?", [ttl, json, sid], (err1, meta) =>
-          console.log "\n\n\n=-=-=[SET](2)", err1, meta, "\n\n\n" #xxx
           return fn err1 if err1?
           return fn.apply(this, arguments) if meta.affectedRows >= 1
           # -- Create new session (because doesn't exist)
