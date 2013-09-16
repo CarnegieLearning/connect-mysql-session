@@ -14,7 +14,7 @@ Optimizations/Deltas
 Why MySQL for Sessions?
 ------------------------
 
-## Less Maintenance
+### Less Maintenance
 
 * If you already use MySQL for your primary data store, eliminating the use of Mongo or Redis reduces the number of vendors, number of critical failure points, and probability of failure in your system as a whole.
 
@@ -24,7 +24,7 @@ Why MySQL for Sessions?
 
 * Upgrades to your primary datastore automatically effect the session store. You don't need to perform two separate upgrades.
 
-## Lower Operating Costs
+### Lower Operating Costs
 
 * It is less expensive to scale existing technology (provision a larger database server), than to provision multiple smaller database servers
 
@@ -33,7 +33,7 @@ Why MySQL for Sessions?
 * Fewer languages means less development time and fewer management and monitoring tools to buy. You are already monitoring your primary data store, why not just reuse that investment.
 
 
-## Better performance
+### Better performance
 
 MySQL in-memory table stores are about as efficient as data storage can get, primary due to its lack of features. Data is allocated in small blocks and indexed with a hash or binary tree.
 
