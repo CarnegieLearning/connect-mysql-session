@@ -9,7 +9,7 @@
   },
   "main": "./index.js",
   "engines": {
-    "node": "~0.4"
+    "node": ">=0.4"
   },
   "dependencies": {
     "sequelize": "~1.1"
